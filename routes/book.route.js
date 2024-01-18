@@ -4,12 +4,27 @@ const {BookModel} = require('../models/book.model.js');
 const bookRouter = express.Router();
 
 bookRouter.get("/", async(req,res) => {
+      const {query} = req.query;
+      const page = req.query.page || 1;
+          
       try {
-            const books = await BookModel.find();
-            if(books.length > 0) {
-                  res.status(200).send({"message" : "No book found"})
-            }else {
+            if(query) {
+                  const books = await BookModel.find({
+                        $or: [
+                          { title: { $regex: query, $options: 'i' } },
+                          { author: { $regex: query, $options: 'i' } },
+                        ],
+                  })
+                  .skip((page - 1) * 6)
+                  .limit(6);
                   res.status(200).send({"data" : books})
+            }else{
+                 const books = await BookModel.find();
+                 if(books.length == 0) {
+                       res.status(200).send({"message" : "No book found"})
+                 }else {
+                       res.status(200).send({"data" : books})
+                 }
             }
       } catch (error) {
             res.status(400).send({"Error" : error.message})
